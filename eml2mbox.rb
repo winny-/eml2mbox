@@ -193,66 +193,66 @@ end
 #     Main      #
 #===============#
 
-    $switches = extractSwitches()
+$switches = extractSwitches()
 
-    # Extract specified directory with emls and the target archive (if any)
-    emlDir = "."     # default if not specified
-    emlDir = ARGV[0] if ARGV[0]!=nil
-    mboxArchive = emlDir+"/archive.mbox"    # default if not specified
-    mboxArchive = ARGV[1] if ARGV[1] != nil
+# Extract specified directory with emls and the target archive (if any)
+emlDir = "."     # default if not specified
+emlDir = ARGV[0] if ARGV[0]!=nil
+mboxArchive = emlDir+"/archive.mbox"    # default if not specified
+mboxArchive = ARGV[1] if ARGV[1] != nil
 
-    # Show specified settings
-    puts "\nSpecified dir : "+emlDir
-    puts "Specified file: "+mboxArchive+"\n"
+# Show specified settings
+puts "\nSpecified dir : "+emlDir
+puts "Specified file: "+mboxArchive+"\n"
 
-    # Check that the dir exists
-    if FileTest.directory?(emlDir)
-        Dir.chdir(emlDir)
+# Check that the dir exists
+if FileTest.directory?(emlDir)
+    Dir.chdir(emlDir)
+else
+    puts "\n["+emlDir+"] is not a directory (might not exist). Please specify a valid dir"
+    exit(0)
+end
+
+# Check if destination file exists. If yes allow user to select an option.
+canceled = false
+if FileTest.exist?(mboxArchive)
+    print "\nFile ["+mboxArchive+"] exists! Please select: [A]ppend  [O]verwrite  [C]ancel (default) "
+    sel = STDIN.gets.chomp
+    if sel == 'A' or sel == 'a'
+        aFile = File.new(mboxArchive, "a");
+    elsif sel == 'O' or sel == 'o'
+        aFile = File.new(mboxArchive, "w");
     else
-        puts "\n["+emlDir+"] is not a directory (might not exist). Please specify a valid dir"
+        canceled = true
+    end
+else
+    # File doesn't exist, open for writing
+    aFile = File.new(mboxArchive, "w");
+end
+
+if not canceled
+    puts
+    files = Dir["*.eml"]
+    if files.size == 0
+        puts "No *.eml files in this directory. mbox file not created."
+        aFile.close
+        File.delete(mboxArchive)
         exit(0)
     end
-
-    # Check if destination file exists. If yes allow user to select an option.
-    canceled = false
-    if FileTest.exist?(mboxArchive)
-        print "\nFile ["+mboxArchive+"] exists! Please select: [A]ppend  [O]verwrite  [C]ancel (default) "
-        sel = STDIN.gets.chomp
-        if sel == 'A' or sel == 'a'
-            aFile = File.new(mboxArchive, "a");
-        elsif sel == 'O' or sel == 'o'
-            aFile = File.new(mboxArchive, "w");
+    # For each .eml file in the specified directory do the following
+    files.each() do |x|
+        puts "Processing file: "+x
+        thisFile = FileInMemory.new()
+        File.open(x).each do |line|
+            line = line.encode('UTF-8', :invalid => :replace, :replace => '')
+            thisFile.addLine(line)
+        end
+        lines = thisFile.getProcessedLines
+        if lines == nil
+            puts "WARN: File ["+x+"] doesn't seem to have a regular From: line. Not included in mbox"
         else
-            canceled = true
+            lines.each {|line| aFile.puts line}
         end
-    else
-        # File doesn't exist, open for writing
-        aFile = File.new(mboxArchive, "w");
     end
-
-    if not canceled
-        puts
-        files = Dir["*.eml"]
-        if files.size == 0
-            puts "No *.eml files in this directory. mbox file not created."
-            aFile.close
-            File.delete(mboxArchive)
-            exit(0)
-        end
-        # For each .eml file in the specified directory do the following
-        files.each() do |x|
-            puts "Processing file: "+x
-            thisFile = FileInMemory.new()
-            File.open(x).each do |line|
-                line = line.encode('UTF-8', :invalid => :replace, :replace => '')
-                thisFile.addLine(line)
-            end
-            lines = thisFile.getProcessedLines
-            if lines == nil
-                puts "WARN: File ["+x+"] doesn't seem to have a regular From: line. Not included in mbox"
-            else
-                lines.each {|line| aFile.puts line}
-            end
-        end
-        aFile.close
-    end
+    aFile.close
+end
