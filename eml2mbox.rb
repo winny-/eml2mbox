@@ -32,25 +32,13 @@
 # script; if not, please visit http://www.gnu.org/copyleft/gpl.html for more information.    #
 #============================================================================================#
 
-require "parsedate"
-
-include ParseDate
+require 'Date'
 
 #=======================================================#
 # Class that encapsulates the processing file in memory #
 #=======================================================#
 
 class FileInMemory
-    
-    ZoneOffset = {
-        # Standard zones by RFC 2822
-        'UTC' => '0000', 
-        'UT' => '0000', 'GMT' => '0000',
-        'EST' => '-0500', 'EDT' => '-0400',
-        'CST' => '-0600', 'CDT' => '-0500',
-        'MST' => '-0700', 'MDT' => '-0600',
-        'PST' => '-0800', 'PDT' => '-0700',
-    }   
     
     def initialize()
         @lines = Array.new
@@ -78,12 +66,14 @@ class FileInMemory
             if line =~ /^Date:\s/ and @date==nil
                 # Parse content of the Date header and convert to the mbox standard for the From_ line
                 @date = line.sub(/Date:\s/,'')
-                year, month, day, hour, minute, second, timezone, wday = parsedate(@date)
+                dt = DateTime.parse(@date)
+                t = dt.to_time
+                d = dt.to_date
+                offset = t.utc_offset
+                offset_hours, offset_minutes = offset.abs.divmod(60*60)
+                timezone = '%s%02i%02i' % ["++-"[offset <=> 0], offset_hours, offset_minutes]
                 # Need to convert the timezone from a string to a 4 digit offset
-                unless timezone =~ /[+|-]\d*/
-                    timezone=ZoneOffset[timezone]
-                end
-                time = Time.gm(year,month,day,hour,minute,second)
+                time = Time.gm(d.year,d.month,d.day,t.hour,t.min,t.sec)
                 @date = formMboxDate(time,timezone)
             end
         end
