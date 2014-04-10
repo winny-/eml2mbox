@@ -243,7 +243,10 @@ end
         files.each() do |x|
             puts "Processing file: "+x
             thisFile = FileInMemory.new()
-            File.open(x).each  {|item| thisFile.addLine(item) }
+            File.open(x).each do |line|
+                line = line.encode('UTF-8', :invalid => :replace, :replace => '')
+                thisFile.addLine(line)
+            end
             lines = thisFile.getProcessedLines
             if lines == nil
                 puts "WARN: File ["+x+"] doesn't seem to have a regular From: line. Not included in mbox"
