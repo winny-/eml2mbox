@@ -39,7 +39,7 @@ require 'Date'
 #=======================================================#
 
 class FileInMemory
-    
+
     def initialize()
         @lines = Array.new
         @counter = 1          # keep the 0 position for the From_ line
@@ -93,8 +93,8 @@ class FileInMemory
                 puts "WARN: Failed to extract date. Will use current time in the From_ line"
                 @date=formMboxDate(Time.now,nil)
             end
-            @lines[0] = @from + " " + @date 
-            
+            @lines[0] = @from + " " + @date
+
             @lines[0] = fixLineEndings(@lines[0])
             @lines[@counter] = ""
             return @lines
@@ -152,7 +152,7 @@ def formMboxDate(time,timezone)
     else
         if $switches["zoneYearOrder"]
             return time.strftime("%a %b %d %H:%M:%S "+timezone.to_s+" %Y")
-        else 
+        else
             return time.strftime("%a %b %d %H:%M:%S %Y "+timezone.to_s)
         end
     end
